@@ -1,6 +1,7 @@
 require 'fileutils'
 require 'logger'
 require 'optparse'
+require 'time'
 require 'yaml'
 
 # set up logger
@@ -30,7 +31,7 @@ for integration in file['integrations'] do
 
     begin
     
-        print "Running tests for " + integration['name'] + "\n"
+        print "Running tests for #{integration['name']}\n"
 
         # create our temporary working directory
         FileUtils.mkdir_p('out')
@@ -51,13 +52,12 @@ for integration in file['integrations'] do
             module_path = mod['path']
 
             files = []
-            FileUtils.mkdir_p('out/modules/' + module_name)
+            FileUtils.mkdir_p("out/modules/#{module_name}")
 
-            Dir.chdir(Dir.pwd + '/' + module_path){
+            Dir.chdir("#{Dir.pwd}/#{module_path}"){
                 # since we might be nested inside the module, we need to exclude our own directory
-                # TODO also allow the exclude list to be specified in the data file
-                files = Dir.glob("*").reject { |file| file.start_with?("spec") }.reject { |file| file.start_with?("integration") }
-                FileUtils.cp_r(files, "integration/out/modules/" + module_name)
+                files = Dir.glob("*").reject { |file| file.start_with?("integration") }
+                FileUtils.cp_r(files, "integration/out/modules/#{module_name}")
             }
 
         end
@@ -70,11 +70,17 @@ for integration in file['integrations'] do
 
         # TODO can we parse the output of this and return an error code if appropriate?
         # run the docker build from inside the 'out' directory
-        FileUtils.mkdir_p('out/images')
-        cmd = 'docker build --progress=plain --no-cache -o images .'
+        image_name = "puppit-#{integration['name']}-#{Time.now.to_i}"
+        print image_name
+        cmd = "docker build -t #{image_name} --progress=plain --no-cache ."
         Dir.chdir('out'){
             system(cmd)
         }
+
+        # remove the created image unless we're in debug mode
+        if !options[:debug]
+            system("docker image rm #{image_name}")
+        end
 
     rescue => ex
 
