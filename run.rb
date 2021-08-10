@@ -1,6 +1,10 @@
 require 'fileutils'
+require 'logger'
 require 'optparse'
 require 'yaml'
+
+# set up logger
+logger = Logger.new(STDOUT)
 
 # parse command line args
 options = {:debug => false}
@@ -22,9 +26,6 @@ parser.parse!
 # read the config file in and parse its parts
 file = YAML.load_file('specs.yml')
 
-modulename = file['modulename']
-modulepath = file['modulepath']
-
 for integration in file['integrations'] do
 
     begin
@@ -43,21 +44,28 @@ for integration in file['integrations'] do
         # TODO optionally, allow an override of the dockerfile to use
         FileUtils.copy_file('main.dockerfile', 'out/Dockerfile', preserve = false, dereference = true)
 
-        # copy in the module under test (since we might be nested inside the module, we need to exclude our own directory)
-        # TODO also allow the exclude list to be specified in the data file
-        files = []
-        FileUtils.mkdir_p('out/modules/prometheus')
+        # copy in module fixtures
+        for mod in integration['fixtures']['modules'] do
+            
+            module_name = mod['name']
+            module_path = mod['path']
 
-        Dir.chdir(Dir.pwd + "/../../prometheus"){
-            print Dir.pwd + "\n"
-            files = Dir.glob("*").reject { |file| file.start_with?("spec") }.reject { |file| file.start_with?("integration") }
-            FileUtils.cp_r(files, "integration/out/modules/prometheus")
-        }
+            files = []
+            FileUtils.mkdir_p('out/modules/' + module_name)
+
+            Dir.chdir(Dir.pwd + '/' + module_path){
+                # since we might be nested inside the module, we need to exclude our own directory
+                # TODO also allow the exclude list to be specified in the data file
+                files = Dir.glob("*").reject { |file| file.start_with?("spec") }.reject { |file| file.start_with?("integration") }
+                FileUtils.cp_r(files, "integration/out/modules/" + module_name)
+            }
+
+        end
 
         # copy in the Puppet manifest to use for our test
         FileUtils.copy_file(integration['manifest'], 'out/site.pp', preserve = false, dereference = true)
 
-        # TODO fixtures! files & other modules - this is just a temp filler
+        # TODO file fixtures! this is just a temp filler
         FileUtils.mkdir_p('out/files')
 
         # TODO can we parse the output of this and return an error code if appropriate?
@@ -71,8 +79,8 @@ for integration in file['integrations'] do
     rescue => ex
 
         # TODO add exception handling
-        logger.error e.message
-        logger.error e.backtrace.join("\n")
+        logger.error ex.message
+        logger.error ex.backtrace.join("\n")
     
     else
     

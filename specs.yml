@@ -1,11 +1,10 @@
-modulename: prometheus
-modulepath: ../../prometheus
-
 integrations:
 - name: exporter-tests
   manifest: site-exporters.pp
   fixtures:
     modules:
+      - name: prometheus
+        path: ../../prometheus
     files:
   tests:
     # ensure the prometheus user has been added
@@ -28,6 +27,8 @@ integrations:
   manifest: site-server.pp
   fixtures:
     modules:
+      - name: prometheus
+        path: ../../prometheus
     files:
   tests:
     # ensure the prometheus user has been added
