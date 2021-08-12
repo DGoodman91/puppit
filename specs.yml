@@ -6,7 +6,9 @@ integrations:
       - name: prometheus
         path: ../../prometheus
     files:
-  tests:
+      - files/test1
+      - files/test2
+  goss-tests:
     # ensure the prometheus user has been added
     user:
       prometheus:
@@ -15,14 +17,6 @@ integrations:
           - prometheus
         home: /home/prometheus
         shell: /sbin/nologin
-    file:
-      # confirm that the node exporter binary is in place
-      /home/prometheus/node_exporter-1.1.2.linux-amd64/node_exporter:
-        exists: true
-        mode: "0755"
-        owner: prometheus
-        group: prometheus
-        filetype: file
 - name: server-tests
   manifest: site-server.pp
   fixtures:
@@ -30,15 +24,7 @@ integrations:
       - name: prometheus
         path: ../../prometheus
     files:
-  tests:
-    # ensure the prometheus user has been added
-    user:
-      prometheus:
-        exists: true
-        groups:
-          - prometheus
-        home: /home/prometheus
-        shell: /sbin/nologin
+  goss-tests:
     file:
       # confirm that the prometheus binary is in place
       /home/prometheus/prometheus-2.27.1.linux-amd64/prometheus:

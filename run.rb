@@ -24,6 +24,8 @@ end
 
 parser.parse!
 
+exit_code = 0
+
 # read the config file in and parse its parts
 file = YAML.load_file('specs.yml')
 
@@ -39,43 +41,55 @@ for integration in file['integrations'] do
 
         # pull out our goss tests and write to a file
         File.open("out/goss.yaml","w") do |file|
-            file.write(integration['tests'].to_yaml)
+            file.write(integration['goss-tests'].to_yaml)
         end
 
-        # TODO optionally, allow an override of the dockerfile to use
+        # copy in the Dockerfile
         FileUtils.copy_file('main.dockerfile', 'out/Dockerfile', preserve = false, dereference = true)
 
         # copy in module fixtures
-        for mod in integration['fixtures']['modules'] do
-            
-            module_name = mod['name']
-            module_path = mod['path']
+        module_fixtures = integration['fixtures']['modules']
+        if module_fixtures
+            for mod in module_fixtures do
+                
+                module_name = mod['name']
+                module_path = mod['path']
 
-            files = []
-            FileUtils.mkdir_p("out/modules/#{module_name}")
+                files = []
+                FileUtils.mkdir_p("out/modules/#{module_name}")
 
-            Dir.chdir("#{Dir.pwd}/#{module_path}"){
-                # since we might be nested inside the module, we need to exclude our own directory
-                files = Dir.glob("*").reject { |file| file.start_with?("integration") }
-                FileUtils.cp_r(files, "integration/out/modules/#{module_name}")
-            }
+                Dir.chdir("#{Dir.pwd}/#{module_path}"){
+                    # since we might be nested inside the module, we need to exclude our own directory
+                    files = Dir.glob("*").reject { |file| file.start_with?("integration") }
+                    FileUtils.cp_r(files, "integration/out/modules/#{module_name}")
+                }
 
+            end
+        end
+
+        # copy in other file fixtures
+        FileUtils.mkdir_p('out/files')
+        file_fixtures = integration['fixtures']['files']
+        if file_fixtures
+            for file in file_fixtures do
+                FileUtils.cp_r(file, 'out/files/')
+            end
         end
 
         # copy in the Puppet manifest to use for our test
-        FileUtils.copy_file(integration['manifest'], 'out/site.pp', preserve = false, dereference = true)
+        FileUtils.copy_file(integration['manifest'], 'out/site.pp', preserve = false, dereference = true)        
 
-        # TODO file fixtures! this is just a temp filler
-        FileUtils.mkdir_p('out/files')
-
-        # TODO can we parse the output of this and return an error code if appropriate?
         # run the docker build from inside the 'out' directory
         image_name = "puppit-#{integration['name']}-#{Time.now.to_i}"
         print image_name
         cmd = "docker build -t #{image_name} --progress=plain --no-cache ."
+        result = nil
         Dir.chdir('out'){
-            system(cmd)
+            result = system(cmd)
         }
+        if !result
+            exit_code = 2
+        end
 
         # remove the created image unless we're in debug mode
         if !options[:debug]
@@ -84,17 +98,16 @@ for integration in file['integrations'] do
 
     rescue => ex
 
-        # TODO add exception handling
         logger.error ex.message
         logger.error ex.backtrace.join("\n")
     
     else
     
-        # TODO add success handling :)
+        print "Test run #{integration['name']} completed\n"
     
     ensure
     
-        # always remove the output directory
+        # always remove the output directory unless we're running in debug mode
         if !options[:debug]
             FileUtils.rm_r('out')
         end
@@ -103,3 +116,11 @@ for integration in file['integrations'] do
     end
 
 end
+
+if exit_code == 0
+    print "All test runs passed\n"
+else
+    print "There were test failures\n"
+end
+
+exit exit_code
