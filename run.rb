@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'erb'
 require 'fileutils'
 require 'logger'
@@ -67,13 +69,13 @@ for integration in file['integrations'] do
         FileUtils.mkdir_p('out/modules')
 
         # pull out our goss tests and write to a file
-        File.open("out/goss.yaml","w") do |file|
+        File.open('out/goss.yaml','w') do |file|
             file.write(integration['goss-tests'].to_yaml)
         end
 
         # build the Dockerfile from the ERB template
         dockerfile_contents = ERB.new(File.read('main.dockerfile.erb')).result(binding)
-        File.open("out/Dockerfile","w") do |file|
+        File.open('out/Dockerfile','w') do |file|
             file.write(dockerfile_contents)
         end
 
@@ -90,7 +92,7 @@ for integration in file['integrations'] do
 
                 Dir.chdir("#{module_path}"){
                     # since we might be nested inside the module, we need to exclude our own directory
-                    files = Dir.glob("*").reject { |file| file.start_with?("integration") }
+                    files = Dir.glob("*").reject { |file| file.start_with?('integration') }
                     FileUtils.cp_r(files, "#{rundir}/out/modules/#{module_name}")
                 }
 

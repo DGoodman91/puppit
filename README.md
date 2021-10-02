@@ -12,6 +12,12 @@ A framework for running integration tests on Puppet code/modules in locally prov
 ---
 
 ## Usage
+
+Start by pulling in the Ruby dependencies with 
+```
+bundler install
+```
+
 To view usage instructions:
 ```
 $ ruby run.rb -h
@@ -73,5 +79,4 @@ Another consequence of the lack of an init system is that Goss's *service* tests
 - Can we replace the Puppet manifests with pure Hiera? Could then include inline in the specs.yml file
 - Should have the option to point to a goss test definition file rather than just including them inline
 ### Code Quality
-- Bundler Gemfile for our dependencies
 - Refactor to a less procedural style
