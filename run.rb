@@ -31,12 +31,18 @@ parser.parse!
 
 exit_code = 0
 
-# read the config file in and parse its parts
-file = YAML.load_file(options[:specfilepath])
+# build the base docker image
+base_image_name = "goodmandev/puppit"
+cmd = "docker build -t #{base_image_name} -f base.dockerfile --progress=plain ."
+system(cmd)
 
 # set up some paths we'll need later on
 rundir = Dir.pwd # directory we're running from
-specdir = "#{rundir}/#{options[:specfilepath]}/.." # directory containing the spec file - all paths defined within it are relative to it
+specfile = "#{rundir}/#{options[:specfilepath]}"
+specdir = "#{specfile}/.." # directory containing the spec file - all paths defined within it are relative to it
+
+# read the config file in and parse its parts
+file = YAML.load_file(specfile)
 
 # iterate over our defined integrations, performing the provisioning, dependency setup, puppet run and test run for each
 for integration in file['integrations'] do
