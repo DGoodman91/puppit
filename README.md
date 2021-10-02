@@ -1,6 +1,6 @@
 ## About
 
-A framework for running integration tests on Puppet code/modules in locally provisioned containers. Uses docker to provision a container in which Puppet manifests are applied, then Goss is used to run acceptance tests on the resulting system.
+A framework for running integration tests on Puppet code/modules in locally provisioned containers. Uses docker to provision a container in which Puppet manifests are applied, then Goss is used to run acceptance tests on the resulting system. The motivation was to get far quicker feedback on changes than provided by VM-based acceptance testing.
 
 ---
 
@@ -20,9 +20,9 @@ Usage: ruby run.rb [options]
     -d, --debug                      Turn on debug mode
     -h, --help                       Displays Help
 ```
-To run test suites defined by a specific spec file:
+To get started, run the sample integration tests with:
 ```
-$ ruby run.rb --specfile=specs.yml
+$ ruby run.rb --specfile=examples/prometheus/specs.yml
 Running tests for exporter-tests
 puppit-exporter-tests-1633192508#1 [internal] load build definition from Dockerfile
 #1 sha256:5a087c871fe41ac8138d45af79d0629c6255632fd80d10a128ae608814ee690b
@@ -58,12 +58,16 @@ Another consequence of the lack of an init system is that Goss's *service* tests
 
 ---
 
+## Other references
+- [Goss](https://github.com/aelsabbahy/goss)
+
+---
+
 ## Development TODOs
 ### Functionality
-- If we're running in debug mode, pause after the tests have run so user can connect into the container and inspect (or add a new option specifically for this). This would probably require templating the dockerfile
+- If we're running in debug mode, pause after the tests have run so user can connect into the container and inspect (or add a new option specifically for this)
 - Add Server-Spec support, it's more powerful than Goss
 - We've got local running working, but need to support running in a CI pipeline inside an existing container. Either a separate script, or abstract our the docker build stage
-- Allow overriding of the docker file? Could do with cleaning up how it all holds together too - the goodman/dev image could be built (+ cached) as part of the run process, but needs to also work for CI pipelines
 - Can we replace the Puppet manifests with pure Hiera? Could then include inline in the specs.yml file
 - Should have the option to point to a goss test definition file rather than just including them inline
 ### Code Quality

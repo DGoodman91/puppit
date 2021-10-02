@@ -1,3 +1,4 @@
+require 'erb'
 require 'fileutils'
 require 'logger'
 require 'optparse'
@@ -8,14 +9,22 @@ require 'yaml'
 logger = Logger.new(STDOUT)
 
 # parse command line args
-options = {:debug => false}
+options = {:debug => false, :imagetag => 'goodmandev/puppit', :userepoimage => false}
 
 parser = OptionParser.new do|opts|
 	opts.banner = "Usage: ruby run.rb [options]"
 
-    opts.on('-s', '--specfile=filepath', 'The relative path to the spec yaml file') do |filepath|
+    opts.on('-s', '--specfile=filepath', 'The relative path to the spec yaml file. Required') do |filepath|
         options[:specfilepath] = filepath
     end
+
+    opts.on('-i', '--imagetag=tag', 'The tag to give the base Dockerfile created. Default goodmandev/puppit') do |tag|
+        options[:imagetag] = tag
+    end
+
+    opts.on('-r', '--userepoimage', 'Skip the building of the base image, instead pulling the image from a local/remote repository') do
+		options[:userepoimage] = true;
+	end
 
 	opts.on('-d', '--debug', 'Turn on debug mode') do
 		options[:debug] = true;
@@ -31,10 +40,12 @@ parser.parse!
 
 exit_code = 0
 
-# build the base docker image
-base_image_name = "goodmandev/puppit"
-cmd = "docker build -t #{base_image_name} -f base.dockerfile --progress=plain ."
-system(cmd)
+# if we're not using a base image from a remote repo, build the base docker image
+base_image_name = options[:imagetag]
+if !options[:userepoimage]
+    cmd = "docker build -t #{base_image_name} -f base.dockerfile --progress=plain ."
+    system(cmd)
+end
 
 # set up some paths we'll need later on
 rundir = Dir.pwd # directory we're running from
@@ -60,8 +71,11 @@ for integration in file['integrations'] do
             file.write(integration['goss-tests'].to_yaml)
         end
 
-        # copy in the Dockerfile
-        FileUtils.copy_file('main.dockerfile', 'out/Dockerfile', preserve = false, dereference = true)
+        # build the Dockerfile from the ERB template
+        dockerfile_contents = ERB.new(File.read('main.dockerfile.erb')).result(binding)
+        File.open("out/Dockerfile","w") do |file|
+            file.write(dockerfile_contents)
+        end
 
         # copy in module fixtures
         module_fixtures = integration['fixtures']['modules']
