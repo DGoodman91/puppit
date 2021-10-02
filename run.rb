@@ -12,6 +12,11 @@ options = {:debug => false}
 
 parser = OptionParser.new do|opts|
 	opts.banner = "Usage: ruby run.rb [options]"
+
+    opts.on('-s', '--specfile=filepath', 'The relative path to the spec yaml file') do |filepath|
+        options[:specfilepath] = filepath
+    end
+
 	opts.on('-d', '--debug', 'Turn on debug mode') do
 		options[:debug] = true;
 	end
@@ -27,7 +32,7 @@ parser.parse!
 exit_code = 0
 
 # read the config file in and parse its parts
-file = YAML.load_file('specs.yml')
+file = YAML.load_file(options[:specfilepath])
 
 for integration in file['integrations'] do
 

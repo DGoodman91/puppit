@@ -1,9 +1,23 @@
 ## Usage
+To view usage instructions:
+```
+$ ruby run.rb -h
+Usage: ruby run.rb [options]
+    -s, --specfile=filepath          The relative path to the spec yaml file [Required]
+    -d, --debug                      Turn on debug mode
+    -h, --help                       Displays Help
+```
+To run test suites defined by a specific spec file:
+```
+$ ruby run.rb --specfile=specs.yml
+Running tests for exporter-tests
+puppit-exporter-tests-1633192508#1 [internal] load build definition from Dockerfile
+#1 sha256:5a087c871fe41ac8138d45af79d0629c6255632fd80d10a128ae608814ee690b
+#1 transferring dockerfile: 731B done
+#1 DONE 0.0s
+...
+```
 
-To run the sample tests
-```
-ruby run.rb
-```
 
 ---
 
@@ -27,6 +41,8 @@ if $facts['virtual'] == 'docker' {
 }
 ```
 Alternatively, if launching the container tests on a CentOS server/VM then the [CentOS systemd docker container](https://hub.docker.com/r/centos/systemd), which relies on mounting a volume from the host OS, can be used as a base.
+
+Another consequence of the lack of an init system is that Goss's *service* tests don't work - a simple alternative is to use the *process* test.
 
 ---
 

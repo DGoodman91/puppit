@@ -1,3 +1,7 @@
+---
+# The top level `integrations` list contains the distinct test setups
+# Each integration is a distinct container run - the configured dependencies are deployed, the manifest applied and the tests run
+# All paths should be relative to the location of the specs file
 integrations:
 - name: exporter-tests
   manifest: site-exporters.pp
@@ -9,7 +13,6 @@ integrations:
       - files/test1
       - files/test2
   goss-tests:
-    # ensure the prometheus user has been added
     user:
       prometheus:
         exists: true
@@ -26,8 +29,8 @@ integrations:
     files:
   goss-tests:
     file:
-      # confirm that the prometheus binary is in place
       /home/prometheus/prometheus-2.27.1.linux-amd64/prometheus:
         exists: true
         mode: "0755"
         filetype: file
+...
