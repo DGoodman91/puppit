@@ -1,3 +1,16 @@
+## About
+
+A framework for running integration tests on Puppet code/modules in locally provisioned containers. Uses docker to provision a container in which Puppet manifests are applied, then Goss is used to run acceptance tests on the resulting system.
+
+---
+
+## Requirements
+
+- Ruby (tested w/ Ruby 3.0.1p64)
+- Docker (tested w/ Docker bersion 20.10.8)
+
+---
+
 ## Usage
 To view usage instructions:
 ```
@@ -17,7 +30,6 @@ puppit-exporter-tests-1633192508#1 [internal] load build definition from Dockerf
 #1 DONE 0.0s
 ...
 ```
-
 
 ---
 
