@@ -1,0 +1,16 @@
+[Unit]
+Description=Prometheus Server
+Documentation=https://prometheus.io/docs/introduction/overview/
+After=network-online.target
+
+[Service]
+User=prometheus
+ExecStart=/home/prometheus/prometheus-<%= @version %>.linux-amd64/prometheus \
+  --config.file=/home/prometheus/prometheus-<%= @version %>.linux-amd64/prometheus.yml \
+  --storage.tsdb.path=<%= @data_dir %> --web.listen-address=0.0.0.0:9090
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

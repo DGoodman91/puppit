@@ -8,7 +8,7 @@ integrations:
   fixtures:
     modules:
       - name: prometheus
-        path: ../../prometheus
+        path: module-prometheus
     files:
       - files/test1
       - files/test2
@@ -25,7 +25,7 @@ integrations:
   fixtures:
     modules:
       - name: prometheus
-        path: ../../prometheus
+        path: module-prometheus
     files:
   goss-tests:
     file:
