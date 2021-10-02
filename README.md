@@ -16,7 +16,9 @@ To view usage instructions:
 ```
 $ ruby run.rb -h
 Usage: ruby run.rb [options]
-    -s, --specfile=filepath          The relative path to the spec yaml file [Required]
+    -s, --specfile=filepath          The relative path to the spec yaml file. Required
+    -i, --imagetag=tag               The tag to give the base Dockerfile created. Default goodmandev/puppit
+    -r, --userepoimage               Skip the building of the base image, instead pulling the image from a local/remote repository
     -d, --debug                      Turn on debug mode
     -h, --help                       Displays Help
 ```
