@@ -77,16 +77,15 @@ for integration in file['integrations'] do
         file_fixtures = integration['fixtures']['files']
         if file_fixtures
             for file in file_fixtures do
-                FileUtils.cp_r(file, 'out/files/')
+                FileUtils.cp_r("#{Dir.pwd}/#{options[:specfilepath]}/../#{file}", 'out/files/')
             end
         end
 
         # copy in the Puppet manifest to use for our test
-        FileUtils.copy_file(integration['manifest'], 'out/site.pp', preserve = false, dereference = true)        
+        FileUtils.copy_file("#{Dir.pwd}/#{options[:specfilepath]}/../#{integration['manifest']}", 'out/site.pp', preserve = false, dereference = true)        
 
         # run the docker build from inside the 'out' directory
         image_name = "puppit-#{integration['name']}-#{Time.now.to_i}"
-        print image_name
         cmd = "docker build -t #{image_name} --progress=plain --no-cache ."
         result = nil
         Dir.chdir('out'){
