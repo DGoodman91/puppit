@@ -6,8 +6,8 @@ A framework for running integration tests on Puppet code/modules in locally prov
 
 ## Requirements
 
-- Ruby (tested w/ Ruby 3.0.1p64)
-- Docker (tested w/ Docker bersion 20.10.8)
+- Ruby (tested w/ ruby 3.1.1p18 (2022-02-18 revision 53f5fc4236) [x64-mingw-ucrt])
+- Docker (tested w/ Docker version 20.10.11, build dea9396)
 
 ---
 
