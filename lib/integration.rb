@@ -32,6 +32,13 @@ class Integration
         file.write(@integration['goss-tests'].to_yaml)
       end
 
+      # if we're not using a base image from a remote repo, build the base docker image
+      base_image_name = @options[:imagetag]
+      if !@options[:userepoimage]
+        cmd = "docker build -t #{base_image_name} -f base.dockerfile --progress=plain ."
+        system(cmd)
+      end
+
       # build the Dockerfile from the ERB template
       dockerfile_contents = ERB.new(File.read('main.dockerfile.erb')).result(binding)
       File.open('out/Dockerfile','w') do |file|
@@ -68,14 +75,7 @@ class Integration
       end
 
       # copy in the Puppet manifest to use for our test
-      FileUtils.copy_file("#{specdir}/#{@integration['manifest']}", 'out/site.pp', preserve = false, dereference = true)        
-
-      # if we're not using a base image from a remote repo, build the base docker image
-      base_image_name = @options[:imagetag]
-      if !@options[:userepoimage]
-        cmd = "docker build -t #{base_image_name} -f base.dockerfile --progress=plain ."
-        system(cmd)
-      end
+      FileUtils.copy_file("#{specdir}/#{@integration['manifest']}", 'out/site.pp', preserve = false, dereference = true)
 
       # run the docker build from inside the 'out' directory
       image_name = "puppit-#{@integration['name']}-#{Time.now.to_i}"
