@@ -1,18 +1,22 @@
+# todo
+# shift all options to individual params
+# comments !
+# better structure!
+
 class Integration
 
-  def initialize(integration, options)
-
-    puts "Wazzuuuuup!";
+  def initialize(integration, base_image_tag, spec_file_path)
 
     # set up logger
     @logger = Logger.new(STDOUT)
 
     @integration = integration
-    @options = options
+    @base_image_tag = base_image_tag
+    @spec_file_path = spec_file_path
 
   end
 
-  def run
+  def run(debug)
 
     begin
     
@@ -20,68 +24,40 @@ class Integration
 
       # set up some paths we'll need later on
       rundir = Dir.pwd # directory we're running from
-      specfile = "#{rundir}/#{@options[:specfilepath]}"
-      specdir = "#{specfile}/.." # directory containing the spec file - all paths defined within it are relative to it
+      specdir = "#{rundir}/#{@spec_file_path}/.." # directory containing the spec file - all paths defined within it are relative to it
+      @tmpdir = "tmp/#{@integration['name']}"
 
       # create our temporary working directory
-      FileUtils.mkdir_p('out')
-      FileUtils.mkdir_p('out/modules')
+      FileUtils.mkdir_p("#{@tmpdir}/modules")
 
       # pull out our goss tests and write to a file
-      File.open('out/goss.yaml','w') do |file|
+      File.open("#{@tmpdir}/goss.yaml",'w') do |file|
         file.write(@integration['goss-tests'].to_yaml)
       end
 
-      # if we're not using a base image from a remote repo, build the base docker image
-      base_image_name = @options[:imagetag]
-      if !@options[:userepoimage]
-        cmd = "docker build -t #{base_image_name} -f base.dockerfile --progress=plain ."
-        system(cmd)
-      end
-
-      # build the Dockerfile from the ERB template
-      dockerfile_contents = ERB.new(File.read('main.dockerfile.erb')).result(binding)
-      File.open('out/Dockerfile','w') do |file|
-        file.write(dockerfile_contents)
-      end
+      # build our dockerfile, defining the image which will apply our manifest and run our tests
+      build_dockerfile()
 
       # copy in module fixtures
-      module_fixtures = @integration['fixtures']['modules']
-      if module_fixtures
-        for mod in module_fixtures do
-        
-          module_name = mod['name']
-          module_path = "#{specdir}/#{mod['path']}"
-
-          files = []
-          FileUtils.mkdir_p("out/modules/#{module_name}")
-
-          Dir.chdir("#{module_path}"){
-            # since we might be nested inside the module, we need to exclude our own directory
-            files = Dir.glob("*").reject { |file| file.start_with?('@integration') }
-            FileUtils.cp_r(files, "#{rundir}/out/modules/#{module_name}")
-          }
-
-        end
-      end
+      add_module_fixtures(rundir)
 
       # copy in other file fixtures
-      FileUtils.mkdir_p('out/files')
+      FileUtils.mkdir_p("#{@tmpdir}/files")
       file_fixtures = @integration['fixtures']['files']
       if file_fixtures
         for file in file_fixtures do
-          FileUtils.cp_r("#{specdir}/#{file}", 'out/files/')
+          FileUtils.cp_r("#{specdir}/#{file}", "#{@tmpdir}/files/")
         end
       end
 
       # copy in the Puppet manifest to use for our test
-      FileUtils.copy_file("#{specdir}/#{@integration['manifest']}", 'out/site.pp', preserve = false, dereference = true)
+      FileUtils.copy_file("#{specdir}/#{@integration['manifest']}", "#{@tmpdir}/site.pp", preserve = false, dereference = true)
 
       # run the docker build from inside the 'out' directory
       image_name = "puppit-#{@integration['name']}-#{Time.now.to_i}"
       cmd = "docker build -t #{image_name} --progress=plain --no-cache ."
       result = nil
-      Dir.chdir('out'){
+      Dir.chdir("#{@tmpdir}"){
         result = system(cmd)
       }
       if !result
@@ -89,7 +65,7 @@ class Integration
       end
 
       # remove the created image unless we're in debug mode
-      if !@options[:debug]
+      if !debug
         system("docker image rm #{image_name}")
       end
 
@@ -105,13 +81,39 @@ class Integration
     ensure
     
       # always remove the output directory unless we're running in debug mode
-      if !@options[:debug]
-        FileUtils.rm_r('out')
+      if !debug
+        FileUtils.rm_r("#{@tmpdir}")
       end
         
     
     end
 
+  end
+
+  def build_dockerfile()
+    # build the Dockerfile from the ERB template
+    dockerfile_contents = ERB.new(File.read('main.dockerfile.erb')).result(binding)
+    File.open("#{@tmpdir}/Dockerfile",'w') do |file|
+      file.write(dockerfile_contents)
+    end
+  end
+
+  def add_module_fixtures(rundir)
+    specdir = "#{rundir}/#{@spec_file_path}/.." # directory containing the spec file - all paths defined within it are relative to it
+    module_fixtures = @integration['fixtures']['modules']
+    if module_fixtures
+      for mod in module_fixtures do
+        module_name = mod['name']
+        module_path = "#{specdir}/#{mod['path']}"
+        files = []
+        FileUtils.mkdir_p("#{@tmpdir}/modules/#{module_name}")
+        Dir.chdir("#{module_path}"){
+          # since we might be nested inside the module, we need to exclude our own directory
+          files = Dir.glob("*").reject { |file| file.start_with?('@integration') }
+          FileUtils.cp_r(files, "#{rundir}/#{@tmpdir}/modules/#{module_name}")
+        }
+      end
+    end
   end
 
 end
