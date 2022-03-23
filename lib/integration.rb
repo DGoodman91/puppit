@@ -53,20 +53,9 @@ class Integration
       # copy in the Puppet manifest to use for our test
       FileUtils.copy_file("#{specdir}/#{@integration['manifest']}", "#{@tmpdir}/site.pp", preserve = false, dereference = true)
 
-      # run the docker build from inside the 'out' directory
-      image_name = "puppit-#{@integration['name']}-#{Time.now.to_i}"
-      cmd = "docker build -t #{image_name} --progress=plain --no-cache ."
-      result = nil
-      Dir.chdir("#{@tmpdir}"){
-        result = system(cmd)
-      }
-      if !result
+      # run our tests
+      if !run_tests(debug)
         exit_code = 2
-      end
-
-      # remove the created image unless we're in debug mode
-      if !debug
-        system("docker image rm #{image_name}")
       end
 
     rescue => ex
@@ -114,6 +103,23 @@ class Integration
         }
       end
     end
+  end
+
+  # our tests are run by building a docker image which applies a Puppet manifest then runs the goss tests
+  def run_tests(debug)
+
+    # run the docker build from inside the 'out' directory
+    image_name = "puppit-#{@integration['name']}-#{Time.now.to_i}"
+    cmd = "docker build -t #{image_name} --progress=plain --no-cache ."
+    Dir.chdir("#{@tmpdir}"){
+      return system(cmd)
+    }
+
+    # remove the created image unless we're in debug mode
+    if !debug
+      system("docker image rm #{image_name}")
+    end
+
   end
 
 end
