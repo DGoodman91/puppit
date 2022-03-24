@@ -11,21 +11,19 @@ class Integration
     @logger = Logger.new(STDOUT)
 
     @integration = integration
+    @tmpdir = "tmp/#{@integration['name']}"
     @base_image_tag = base_image_tag
-    @spec_file_path = spec_file_path
+    @spec_dir = "#{Dir.pwd}/#{spec_file_path}/.." # directory containing the spec file - all paths defined within it are relative to it
 
   end
 
   def run(debug)
 
+    success = true
+
     begin
     
       print "Running tests for #{@integration['name']}\n"
-
-      # set up some paths we'll need later on
-      rundir = Dir.pwd # directory we're running from
-      specdir = "#{rundir}/#{@spec_file_path}/.." # directory containing the spec file - all paths defined within it are relative to it
-      @tmpdir = "tmp/#{@integration['name']}"
 
       # create our temporary working directory
       FileUtils.mkdir_p("#{@tmpdir}/modules")
@@ -39,27 +37,23 @@ class Integration
       build_dockerfile()
 
       # copy in module fixtures
-      add_module_fixtures(rundir)
+      add_module_fixtures()
 
       # copy in other file fixtures
       FileUtils.mkdir_p("#{@tmpdir}/files")
       file_fixtures = @integration['fixtures']['files']
       if file_fixtures
         for file in file_fixtures do
-          FileUtils.cp_r("#{specdir}/#{file}", "#{@tmpdir}/files/")
+          FileUtils.cp_r("#{@spec_dir}/#{file}", "#{@tmpdir}/files/")
         end
       end
 
-      # copy in the Puppet manifest to use for our test
-      FileUtils.copy_file("#{specdir}/#{@integration['manifest']}", "#{@tmpdir}/site.pp", preserve = false, dereference = true)
-
       # run our tests
-      if !run_tests(debug)
-        exit_code = 2
-      end
+      success = run_tests(debug)
 
     rescue => ex
 
+      success = false
       @logger.error ex.message
       @logger.error ex.backtrace.join("\n")
     
@@ -73,7 +67,8 @@ class Integration
       if !debug
         FileUtils.rm_r("#{@tmpdir}")
       end
-        
+
+      return success
     
     end
 
@@ -87,13 +82,15 @@ class Integration
     end
   end
 
-  def add_module_fixtures(rundir)
-    specdir = "#{rundir}/#{@spec_file_path}/.." # directory containing the spec file - all paths defined within it are relative to it
+  def add_module_fixtures()
+
+    rundir = Dir.pwd
     module_fixtures = @integration['fixtures']['modules']
+
     if module_fixtures
       for mod in module_fixtures do
         module_name = mod['name']
-        module_path = "#{specdir}/#{mod['path']}"
+        module_path = "#{@spec_dir}/#{mod['path']}"
         files = []
         FileUtils.mkdir_p("#{@tmpdir}/modules/#{module_name}")
         Dir.chdir("#{module_path}"){
@@ -103,22 +100,30 @@ class Integration
         }
       end
     end
+
   end
 
   # our tests are run by building a docker image which applies a Puppet manifest then runs the goss tests
   def run_tests(debug)
 
+    result = false
+
+    # copy in the Puppet manifest to use for our test
+    FileUtils.copy_file("#{@spec_dir}/#{@integration['manifest']}", "#{@tmpdir}/site.pp", preserve = false, dereference = true)
+
     # run the docker build from inside the 'out' directory
     image_name = "puppit-#{@integration['name']}-#{Time.now.to_i}"
     cmd = "docker build -t #{image_name} --progress=plain --no-cache ."
     Dir.chdir("#{@tmpdir}"){
-      return system(cmd)
+      result = system(cmd)
     }
 
     # remove the created image unless we're in debug mode
     if !debug
       system("docker image rm #{image_name}")
     end
+
+    return result
 
   end
 

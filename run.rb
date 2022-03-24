@@ -31,11 +31,22 @@ if !options[:userepoimage]
   system(cmd)
 end
 
+all_tests_passed = true
+
 for yaml_int in file['integrations'] do
 
   integration = Integration.new(yaml_int, options[:imagetag], options[:specfilepath])
 
-  integration.run(options[:debug])
+  if !integration.run(options[:debug])
+    all_tests_passed = false
+  end
     
 end
 
+if all_tests_passed
+  print "All test passed for all integrations :)"
+  exit 0
+else
+  print "There were test failures"
+  exit 2
+end
