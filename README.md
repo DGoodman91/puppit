@@ -53,12 +53,12 @@ When this manifest is applied to, e.g., a CentOS 7 VM, the OS's default init sys
 
 A somewhat clunky workaround is to use the relevant attributes of the Service type to provide management commands that don't rely on systemd, e.g.
 ```puppet
-if $facts['virtual'] == 'docker' {
+  if $facts['virtual'] == 'docker' {
     service { 'sendmail':
-        ensure => running,
-        start  => '/usr/sbin/sendmail -bd -q1h',
+      ensure => running,
+      start  => '/usr/sbin/sendmail -bd -q1h',
+    }
   }
-}
 ```
 Alternatively, if launching the container tests on a CentOS server/VM then the [CentOS systemd docker container](https://hub.docker.com/r/centos/systemd), which relies on mounting a volume from the host OS, can be used as a base.
 
