@@ -1,4 +1,4 @@
-FROM <%= @base_image_tag %>
+FROM <%= template_parameters[:base_image] %>
 
 # we'll use this as our working directory
 ENV TESTHOME=testing

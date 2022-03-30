@@ -1,8 +1,3 @@
-# todo
-# shift all options to individual params
-# comments !
-# better structure!
-
 class Integration
 
   def initialize(integration, base_image_tag, spec_file_path)
@@ -34,7 +29,7 @@ class Integration
       end
 
       # build our dockerfile, defining the image which will apply our manifest and run our tests
-      build_dockerfile()
+      ContainerHelper.build_dockerfile('main.dockerfile.erb', "#{@tmpdir}/Dockerfile", {:base_image => @base_image_tag})
 
       # copy in module fixtures
       add_module_fixtures()
@@ -72,14 +67,6 @@ class Integration
     
     end
 
-  end
-
-  def build_dockerfile()
-    # build the Dockerfile from the ERB template
-    dockerfile_contents = ERB.new(File.read('main.dockerfile.erb')).result(binding)
-    File.open("#{@tmpdir}/Dockerfile",'w') do |file|
-      file.write(dockerfile_contents)
-    end
   end
 
   def add_module_fixtures()
