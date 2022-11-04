@@ -29,7 +29,12 @@ class Integration
       end
 
       # build our dockerfile, defining the image which will apply our manifest and run our tests
-      ContainerHelper.build_dockerfile('main.dockerfile.erb', "#{@tmpdir}/Dockerfile", {:base_image => @base_image_tag})
+      # pass in debug_args if the application was run in debug mode
+      # wanted to use --detailed-exitcodes but the system() method assumes non-zero exit codes indicate failure...
+      ContainerHelper.build_dockerfile('main.dockerfile.erb', "#{@tmpdir}/Dockerfile", {
+          :base_image => @base_image_tag, 
+          :debug_args => debug ? '--debug' : ''
+        })
 
       # copy in module fixtures
       add_module_fixtures()

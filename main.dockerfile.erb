@@ -19,4 +19,4 @@ COPY goss.yaml $TESTHOME
 COPY files $TESTHOME
 
 # apply the puppet manifest & run out goss tests
-RUN /opt/puppetlabs/bin/puppet apply --modulepath=$TESTHOME/modules $TESTHOME/manifests/site.pp && /usr/local/bin/goss -g $TESTHOME/goss.yaml validate --format documentation
+RUN /opt/puppetlabs/bin/puppet apply <%= template_parameters[:debug_args] %> --modulepath=$TESTHOME/modules $TESTHOME/manifests/site.pp && /usr/local/bin/goss -g $TESTHOME/goss.yaml validate --format documentation
